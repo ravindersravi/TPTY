@@ -1,21 +1,26 @@
+``` 
 import javax.management.*;
+import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MyMBean implements DynamicMBean {
+public class ExampleDynamicMBean implements DynamicMBean {
 
-    private int count;
+    private int attributeValue;
 
     @Override
     public Object getAttribute(String attribute) throws AttributeNotFoundException, MBeanException, ReflectionException {
-        if (attribute.equals("Count")) {
-            return count;
+        if (attribute.equals("AttributeValue")) {
+            return attributeValue;
+        } else {
+            throw new AttributeNotFoundException(attribute);
         }
-        throw new AttributeNotFoundException(attribute);
     }
 
     @Override
     public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
-        if (attribute.getName().equals("Count")) {
-            count = (Integer) attribute.getValue();
+        if (attribute.getName().equals("AttributeValue")) {
+            attributeValue = (int) attribute.getValue();
         } else {
             throw new AttributeNotFoundException(attribute.getName());
         }
@@ -29,7 +34,7 @@ public class MyMBean implements DynamicMBean {
                 Object value = getAttribute(attribute);
                 list.add(new Attribute(attribute, value));
             } catch (Exception e) {
-                // Ignore invalid attributes
+                // Ignore attribute if it doesn't exist or if there was an error getting it
             }
         }
         return list;
@@ -43,7 +48,7 @@ public class MyMBean implements DynamicMBean {
                 setAttribute(attribute);
                 list.add(attribute);
             } catch (Exception e) {
-                // Ignore invalid attributes
+                // Ignore attribute if it doesn't exist or if there was an error setting it
             }
         }
         return list;
@@ -51,27 +56,32 @@ public class MyMBean implements DynamicMBean {
 
     @Override
     public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException {
-        throw new UnsupportedOperationException("MyMBean does not have any operations");
+        throw new ReflectionException(new NoSuchMethodException(actionName));
     }
 
     @Override
     public MBeanInfo getMBeanInfo() {
-        MBeanAttributeInfo countAttributeInfo = new MBeanAttributeInfo(
-            "Count",
-            "The number of items",
-            () -> count,
-            value -> count = (Integer) value,
-            true, // writable attribute
-            false // non-is getter
-        );
+        List<MBeanAttributeInfo> attributeList = new ArrayList<>();
+        attributeList.add(new MBeanAttributeInfo("AttributeValue", int.class.getName(),
+                "A single attribute value", true, true, false));
+        MBeanAttributeInfo[] attributes = attributeList.toArray(new MBeanAttributeInfo[attributeList.size()]);
+        return new MBeanInfo(this.getClass().getName(), "Example Dynamic MBean", attributes, null, null, null);
+    }
 
-        return new MBeanInfo(
-            MyMBean.class.getName(),
-            "MyMBean",
-            new MBeanAttributeInfo[] { countAttributeInfo },
-            null,
-            null,
-            null
-        );
+    public static void main(String[] args) throws Exception {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        ObjectName name = new ObjectName("com.example:type=ExampleDynamicMBean");
+        ExampleDynamicMBean mbean = new ExampleDynamicMBean();
+        mbs.registerMBean(mbean, name);
+
+        // Wait for user input before exiting
+        System.out.println("Press any key to exit");
+        System.in.read();
+
+        // Unregister the MBean
+        mbs.unregisterMBean(name);
     }
 }
+
+
+```

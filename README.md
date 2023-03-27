@@ -1,5 +1,3 @@
-# TPTY
-
 import javax.management.*;
 
 public class MyMBean implements DynamicMBean {

@@ -1,0 +1,69 @@
+
+public interface MyMBean {
+    int getMyValue();
+    void setMyValue(int value);
+}
+
+
+
+
+import org.springframework.stereotype.Component;
+
+import javax.management.*;
+
+@Component
+public class My implements MyMBean {
+
+    private int myValue;
+
+    @Override
+    public int getMyValue() {
+        return myValue;
+    }
+
+    @Override
+    public void setMyValue(int myValue) {
+        this.myValue = myValue;
+    }
+
+    @PostConstruct
+    public void registerMBean() throws MalformedObjectNameException, NotCompliantMBeanException, InstanceAlreadyExistsException, MBeanRegistrationException {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        MyMBean proxy = (MyMBean) MBeanServerInvocationHandler.newProxyInstance(mbs,
+                new ObjectName("com.example:type=My"), MyMBean.class, false);
+        StandardMBean standardMBean = new StandardMBean(proxy, MyMBean.class, true);
+        mbs.registerMBean(standardMBean, new ObjectName("com.example:type=My"));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+In this example, the My class implements the MyMBean interface and defines the myValue attribute.
+
+We annotate the class with @Component to make it a Spring bean, and we use the @PostConstruct annotation to indicate that the registerMBean method should be called after the bean has been created.
+
+The registerMBean method creates a new instance of MyMBean using the MBeanServerInvocationHandler.newProxyInstance method, which returns a proxy object that implements the MyMBean interface.
+
+Next, we create a new instance of StandardMBean and pass in the proxy object, the MyMBean interface, and true to specify that the attribute is writable. Finally, we register the StandardMBean instance with the MBean server using the registerMBean method.
+
+This code will automatically register the MBean when the Spring application starts up, and the MyValue attribute will be writable in JConsole.
+
+
+

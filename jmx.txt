@@ -1,0 +1,29 @@
+import javax.management.*;
+
+public interface MyMBean {
+    int getMyValue();
+    void setMyValue(int value);
+}
+
+public class My implements MyMBean {
+
+    private int myValue;
+
+    public int getMyValue() {
+        return myValue;
+    }
+
+    public void setMyValue(int myValue) {
+        this.myValue = myValue;
+    }
+
+    public static void main(String[] args) throws Exception {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        MyMBean mbean = new My();
+        MyMBean proxy = (MyMBean) MBeanServerInvocationHandler.newProxyInstance(mbs, new ObjectName("my:type=My"), MyMBean.class, false);
+        mbs.registerMBean(new StandardMBean(mbean, MyMBean.class, true), new ObjectName("my:type=My"));
+        while (true) {
+            Thread.sleep(1000);
+        }
+    }
+}
